@@ -1,7 +1,7 @@
 require('dotenv').config()
 import { MoreThanOrEqual } from "typeorm";
 import { VerificationCode } from "../entities/VerificationCode";
-import { GeneralResponse } from "../resolvers/Responses/General/GeneralResponse";
+import { GeneralResponse } from "../responses/General/GeneralResponse";
 import Twilio from 'twilio';
 
 //TWILIO credentials
@@ -20,6 +20,7 @@ class SMSService {
 
         return code.toString();
     }
+    
 
     async sendVerificationCode(countryCode: string, phoneNumber: string): Promise<GeneralResponse> {
         const existingCode = await VerificationCode.createQueryBuilder().where({
@@ -28,34 +29,32 @@ class SMSService {
             expiresAt: MoreThanOrEqual(new Date()),
           })
           .getOne();
-        
         if (existingCode) {
             return {
                 error: { field: "Existing Code", message: "You have to wait 1 minute before you can send another verification code" },
             };
         }
 
-        const code = this.generateVerificationCode();
 
+        const code = this.generateVerificationCode();
         // Set the expiry date 1 minute in the future
         const expirationDate = new Date();
         expirationDate.setMinutes(expirationDate.getMinutes() + 1);
 
         try {
-            const ver = await VerificationCode.create({
+            await VerificationCode.create({
                 countryCode: countryCode,
                 phoneNumber: phoneNumber,
                 code: code,
                 expiresAt: expirationDate,
             }).save();
-
             //Send SMS
             // await client.messages.create({
-            //     from: "+1 256 445 9498",
+            //     from: "+1 561 571 8389",
             //     to: countryCode + phoneNumber,
             //     body: `Your Encryptify Verification code is: ${code}`,
             // });
-
+            console.log(`Your Encryptify Verification code is: ${code}`);
             return { success: true };
         } catch (err) {
             return {

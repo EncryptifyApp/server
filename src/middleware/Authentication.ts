@@ -1,21 +1,32 @@
-import { MiddlewareFn } from 'type-graphql';
-import jwt from 'jsonwebtoken';
-import { Context } from '../types';
+// authMiddleware.ts
+import { User } from "../entities/User";
+import { Context } from "../types";
+import { MiddlewareFn } from "type-graphql";
 
-export const isAuth: MiddlewareFn<Context> = ({ context }, next) => {
-  const authorization = context.req.headers['authorization'];
-  if (!authorization) {
-    throw new Error('Not authenticated');
-  }
 
-  try {
-    const token = authorization.split(' ')[1];
-    const payload = jwt.verify(token, 'yourSecretKey'); // Use your actual secret key
+export const AuthMiddleware: MiddlewareFn<Context> = async ({ context }, next) => {
+        try {
+            const sessionToken = context.req.headers["authorization"];
+            console.log("sessionToken", sessionToken)
+            if (!sessionToken) {
+                throw new Error("Authorization token missing");
+            }
+    
+            // Find the user based on the active session token
+            const user = await User.findOne({ where: { activeSessionToken: sessionToken } });
+            if (!user || !sessionToken) {
+                context.userId = null;
+                throw new Error("Not Authenticated");
+            }
 
-    context.payload = payload as any;
-  } catch (err) {
-    throw new Error('Not authenticated');
-  }
+            // Attach the user to the context for use in the resolver
+            context.userId = user.id;
+            console.log("context", context.userId)
+        }   catch (error) {
+            console.error(error);
+            return new Error("Error: " + error);
+        }
+       
 
-  return next();
+    return next();
 };

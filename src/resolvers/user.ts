@@ -1,20 +1,23 @@
-import { Resolver, Query, Mutation, Arg, Ctx } from 'type-graphql'
+import { Resolver, Query, Mutation, Arg, Ctx, ObjectType, Field, UseMiddleware } from 'type-graphql'
 import UserService from '../services/UserService';
-import { GeneralResponse } from './Responses/General/GeneralResponse';
+import { GeneralResponse } from '../responses/General/GeneralResponse';
 import { VerificationSMSSenderLimiter } from '../services/RateLimiter';
 import { Context } from '../types';
 import AuthService from '../services/AuthService';
 import { SignUpState } from '../enums/SignUpState';
-import { TokenResponse } from './Responses/TokenResponse';
+import { TokenResponse } from '../responses/TokenResponse';
 import SMSService from '../services/SMSService';
-import { SignUpResponse } from './Responses/SignUpResponse';
+import { User } from '../entities/User';
+import { FieldError } from '../responses/General/FieldError';
+import { AuthResponse } from '../responses/AuthResponse';
+import { AuthMiddleware } from '../middleware/Authentication';
 
 
 @Resolver()
 export class UserResolver {
     @Query(() => String)
-    async hello(): Promise<string> {
-        return "Hello world"
+    async userhealthCheck(): Promise<string> {
+        return "OK";
     }
 
     @Mutation(() => TokenResponse)
@@ -24,14 +27,13 @@ export class UserResolver {
         @Ctx() { req }: Context
     ): Promise<TokenResponse> {
         // Limiter for spam protection
-        try {
-            await VerificationSMSSenderLimiter.consume(req.ip);
-        } catch (error) {
-            return {
-                error: { field: "content", message: "You requested too many verification codes, please try again in one hour" },
-            };
-        }
-
+        // try {
+        //     await VerificationSMSSenderLimiter.consume(req.ip);
+        // } catch (error) {
+        //     return {
+        //         error: { field: "content", message: "You requested too many verification codes, please try again in one hour" },
+        //     };
+        // }
         const res = await SMSService.sendVerificationCode(countryCode, phoneNumber);
 
         if (res.error) {
@@ -48,34 +50,46 @@ export class UserResolver {
 
     @Mutation(() => TokenResponse)
     async validateVerificationCode(
-        @Arg("countryCode") countryCode: string,
-        @Arg("phoneNumber") phoneNumber: string,
         @Arg("code") code: string,
         @Arg("registrationToken") registrationToken: string,
         @Ctx() { req }: Context
     ): Promise<TokenResponse> {
         // Limiter for spam protection
-        try {
-            await VerificationSMSSenderLimiter.consume(req.ip);
-        } catch (error) {
+        // try {
+        //     await VerificationSMSSenderLimiter.consume(req.ip);
+        // } catch (error) {
+        //     return {
+        //         error: { field: "Error", message: "You tried too many times, please try again later" },
+        //     };
+        // }
+        
+        const payload = AuthService.getPayloadbyToken(registrationToken);
+
+        if (!payload) {
             return {
-                error: { field: "Error", message: "You tried too many times, please try again later" },
+                error: { field: "Error", message: "Invalid or expired registration token" },
             };
         }
 
-        if (!AuthService.validateRegistrationToken(registrationToken, countryCode, phoneNumber)) {
+
+        const valid = AuthService.validateRegistrationToken(registrationToken, payload.countryCode, payload.phoneNumber);
+
+        if (!valid) {
             return {
                 error: { field: "Registration Token", message: "Invalid or expired registration token" },
             };
         }
 
-        const response = await UserService.validateVerificationCode(countryCode, phoneNumber, code);
+        const response = await UserService.validateVerificationCode(payload.countryCode, payload.phoneNumber, code);
 
         if (response.success) {
-            const token = AuthService.updateStateForToken(registrationToken, SignUpState.SMSCodeValidated)
-            if (token) return { token: token }
+            const token = AuthService.updateStateForToken(registrationToken, SignUpState.PHONE_NUMBER_VERIFIED)
+            if (token) {
+                return {
+                    token
+                }
+            }
         }
-
         if (response.error) return {
             error: { field: response.error.field, message: response.error.message },
         };
@@ -85,22 +99,57 @@ export class UserResolver {
         };
     }
 
-    @Mutation(() => SignUpResponse)
-    async signUp(
-        @Arg("countryCode") countryCode: string,
-        @Arg("phoneNumber") phoneNumber: string,
-        @Arg("Username") username: string,
-        @Arg("deviceId") deviceId: string,
+    @Mutation(() => AuthResponse)
+    async authenticate(
+        @Arg("username") username: string,
         @Arg("registrationToken") registrationToken: string,
-    ): Promise<SignUpResponse> {
-        const state = AuthService.getStateForToken(registrationToken);
-        if (state == SignUpState.SMSCodeValidated) {
-            return await UserService.signUp(countryCode, phoneNumber, username, deviceId)
-        } else {
+        @Arg("publicKey") publicKey: string,
+    ): Promise<AuthResponse> {
+        try {
+            const payload = AuthService.getPayloadbyToken(registrationToken);
+    
+            if (payload?.registrationState == SignUpState.PHONE_NUMBER_VERIFIED) {
+    
+                const sessionToken = await AuthService.AuthenticatedUser(payload.countryCode, payload.phoneNumber, username, publicKey);
+                if (sessionToken) {
+                    return { sessionToken: sessionToken };
+                }
+            }
+            else if (payload?.registrationState == SignUpState.PHONE_NUMBER_PROVIDED) {
+                return {
+                    error: { field: "Error", message: "Phone number was not verified" }
+                }
+            }
+    
             return {
-                error: { field: "Error", message: "Phone number was not verifieds" }
+                error: { field: "Error", message: "Invalid or expired registration token" }
+            }
+        } catch (error) {
+            console.error("Error authenticating user", error);
+            return {
+                error: { field: "Error", message: "Something went wrong, try again later" }
             }
         }
+        
 
+    }
+
+    
+    @Query(() => User, { nullable: true })
+    @UseMiddleware(AuthMiddleware)
+    async user(
+        @Ctx() {userId}: Context
+    ): Promise<User | null> {
+        const user = await UserService.getUserById(userId!);
+        return user;
+    }
+
+
+    //TODOD: remove this
+    @Query(() => [User],{ nullable: true })
+    @UseMiddleware(AuthMiddleware)
+    async users(@Ctx() {userId}: Context): Promise<User[]> {
+        const users = await UserService.getAllUsers(userId!);
+        return users;
     }
 }
