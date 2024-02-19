@@ -1,37 +1,37 @@
 import { Field, ObjectType } from "type-graphql";
-import { Column, Entity, BaseEntity, PrimaryColumn, OneToMany } from "typeorm";
+import { Column, Entity, BaseEntity, PrimaryGeneratedColumn, OneToMany } from "typeorm";
 import { Chat } from "./Chat";
 import { Message } from "./Message";
+import { Subscription } from "./Subscription";
 
 @ObjectType()
 @Entity()
 export class User extends BaseEntity {
     @Field(() => String)
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Field(() => String)
-    @Column()
+    @Field(() => String, { nullable: true })
+    @Column({nullable: true})
     username: string;
 
     @Field(() => String, { nullable: true })
     @Column({ nullable: true })
     profileUrl?: string;
 
-    @Field(() => String)
-    @Column()
-    countryCode: string;
+    @Column({unique: true})
+    accountNumber: string;
 
-    @Field(() => String)
-    @Column()
-    phoneNumber: string;
-
-    @Column()
+    @Column({ nullable: true })
     activeSessionToken?: string;
 
     @Field(() => String, { nullable: true })
-    @Column()
+    @Column({nullable: true})
     publicKey?: string;
+
+    @Field(() => String, { nullable: true })
+    @Column({nullable: true})
+    encryptedPrivateKey?: string;
 
     @OneToMany(() => Chat, chat => chat.members)
     chats: Chat[];
@@ -41,6 +41,9 @@ export class User extends BaseEntity {
 
     @OneToMany(() => Message, message => message)
     receivedMessages: Message[];
+
+    @OneToMany(() => Subscription, subscription => subscription.user)
+    subscriptions: Subscription[];
 
     @Field(() => Date, { nullable: true })
     @Column()

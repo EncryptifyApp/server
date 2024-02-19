@@ -1,5 +1,5 @@
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
-import { Field, ID, ObjectType } from 'type-graphql';
+import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinTable } from 'typeorm';
+import { Field,ObjectType } from 'type-graphql';
 import { User } from './User';
 import { Chat } from './Chat';
 
@@ -7,8 +7,8 @@ import { Chat } from './Chat';
 @Entity()
 export class Message extends BaseEntity {
   @Field()
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Field(() => String)
   @Column()
@@ -16,13 +16,12 @@ export class Message extends BaseEntity {
 
   @Field(() => User)
   @ManyToOne(() => User)
+  @JoinTable()
   sender: User;
 
-  @Field(() => User)
-  @ManyToOne(() => User)
-  receiver: User;
-
+  @Field(() => Chat)
   @ManyToOne(() => Chat)
+  @JoinTable()
   chat?: Chat;
 
   @Field()

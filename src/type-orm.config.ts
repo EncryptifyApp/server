@@ -2,9 +2,9 @@ require('dotenv').config()
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { User } from "./entities/User";
-import { VerificationCode } from "./entities/VerificationCode";
 import { Chat } from "./entities/Chat";
 import { Message } from "./entities/Message";
+import { Subscription } from "./entities/Subscription";
 
 const AppDataSource = new DataSource({
   type: "postgres",
@@ -13,7 +13,7 @@ const AppDataSource = new DataSource({
   username: process.env.DATABASE_USERNAME || "postgres",
   password: process.env.DATABASE_PASSWORD || "postgres",
   database: process.env.DATABASE_NAME || "Encryptify",
-  entities: [User, VerificationCode,Chat,Message],
+  entities: [User, Subscription,Chat,Message],
   synchronize: true,
   logging: false,
 });
