@@ -4,22 +4,6 @@ import { Not } from "typeorm";
 
 
 class UserService {
-
-    //TODO: remove this
-    async getAllUsers(id: string): Promise<User[]> {
-        try {
-            const users = await User.find({
-                where: {
-                    id: Not(id),
-                },
-            });
-            return users;
-        } catch (error) {
-            console.error("Error fetching users:", error);
-            throw error;
-        }
-    }
-
     async getUserById(id: string): Promise<User | null> {
         try {
             const user = await User.findOneBy({ id });

@@ -19,7 +19,7 @@ export class Message extends BaseEntity {
   @JoinTable()
   sender: User;
 
-  @Field(() => Chat)
+  @Field(() => Chat,{nullable:true})
   @ManyToOne(() => Chat)
   @JoinTable()
   chat?: Chat;

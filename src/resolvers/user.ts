@@ -86,13 +86,4 @@ export class UserResolver {
         const user = await UserService.getUserById(userId!);
         return user;
     }
-
-
-    //TODO: remove this
-    @Query(() => [User], { nullable: true })
-    @UseMiddleware(AuthMiddleware)
-    async users(@Ctx() { userId }: Context): Promise<User[]> {
-        const users = await UserService.getAllUsers(userId!);
-        return users;
-    }
 }

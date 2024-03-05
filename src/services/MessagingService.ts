@@ -36,26 +36,22 @@ class MessagingService {
 
   async sendMessage(fromUserId: string, toUserId: string, content: string): Promise<Message> {
     // Fetch User entities based on user IDs
-    const fromUser = await User.findOne({ where: { id: fromUserId } });
-    const toUser = await User.findOne({ where: { id: toUserId } });
-
+    const fromUser = await User.findOne({ where: {id:fromUserId}});
+    const toUser = await User.findOne({ where: {id:toUserId}});
 
     // Find or create a chat
     let chat = await Chat.createQueryBuilder('chat')
-      .innerJoin('chat.members', 'participant')
-      .where('participant.id IN (:...ids)', { ids: [fromUserId, toUserId] })
-      .groupBy('chat.id')
-      .having('COUNT(DISTINCT participant.id) = :count', { count: 2 })
-      .getOne();
+        .innerJoin('chat.members', 'participant')
+        .where('participant.id IN (:...ids)', { ids: [fromUserId, toUserId] })
+        .groupBy('chat.id')
+        .having('COUNT(DISTINCT participant.id) = :count', { count: 2 })
+        .getOne();
 
     if (!chat) {
-
-      chat = new Chat();
-      chat.members = [fromUser!, toUser!];
-      await chat.save();
+        chat = new Chat();
+        chat.members = [fromUser!, toUser!];
+        await chat.save();
     }
-
-    await chat.save();
 
     // Create a new Message instance
     const message = new Message();
@@ -66,57 +62,52 @@ class MessagingService {
     // Assign the message content
     message.content = content;
     message.chat = chat;
+    message.chat.members = [fromUser!, toUser!];
 
     // Save the message to the database
     await message.save();
-
     return message;
-  }
+}
+
 
 
   async getChats(userId: string): Promise<Chat[]> {
     const chats = await Chat.createQueryBuilder("chat")
-    .leftJoin("chat.members", "member")
-    .leftJoinAndSelect("chat.messages", "message")
-    .leftJoinAndSelect("message.sender", "sender")
-    .addSelect([
-      // members
-      "member.id",
-      "member.username",
-      "member.profileUrl",
-      "member.publicKey",
-      // messages
-      "message.content",
-      "message.createdAt",
-      "message.id",
-      // sender
-      "sender.id",
-      "sender.username",
-      "sender.profileUrl",
-    ])
-    .where("member.id != :userId", { userId }) // Exclude the auth user
-    .getMany();
+        .innerJoinAndSelect("chat.members", "member")
+        .leftJoinAndSelect("chat.messages", "message")
+        .leftJoinAndSelect("message.sender", "sender")
+        .addSelect([
+            // members
+            "member.id",
+            "member.username",
+            "member.profileUrl",
+            "member.publicKey",
+            // messages
+            "message.content",
+            "message.createdAt",
+            "message.id",
+            // sender
+            "sender.id",
+            "sender.username",
+            "sender.profileUrl",
+        ])
+        .where((qb) => {
+            const subQuery = qb
+                .subQuery()
+                .select("1")
+                .from("chat_members_user", "cm")
+                .where("cm.chatId = chat.id")
+                .andWhere("cm.userId = :userId")
+                .getQuery();
+                
+            return `EXISTS ${subQuery}`;
+        })
+        .setParameter("userId", userId)
+        .getMany();
 
     return chats;
-  }
-  
+}
 
-  async getChat(id:string): Promise<Chat | null> {
-    const chat = await Chat.findOne({
-      relations: {
-        members: true,
-        messages: {
-            sender: true,     
-        }
-      },
-      where: {
-        id:id
-      }
-    });
-  
-    return chat;
-  }
-  
 
 }
 

@@ -10,21 +10,21 @@ export class Chat extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Field(() => [User])
+  @Field(() => [User],{nullable:true})
   @ManyToMany(() => User, user => user.chats)
   @JoinTable()
   members: User[];
 
-  @Field(() => [Message])
+  @Field(() => [Message],{nullable:true})
   @OneToMany(() => Message, message => message.chat)
   @JoinTable()
   messages: Message[];
 
-  @Field()
+  @Field({nullable:true})
   @CreateDateColumn()
   createdAt: Date;
 
-  @Field()
+  @Field({nullable:true})
   @UpdateDateColumn()
   updatedAt: Date;
 }

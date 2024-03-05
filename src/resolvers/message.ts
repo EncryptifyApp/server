@@ -13,12 +13,15 @@ export class MessageResolver {
     @Subscription({
         topics: "NEW_MESSAGE",
         filter: async ({ payload, context }) => {
-          const message = await Message.findOne({where: {id: payload.id}, relations: ["chat", "chat.members"]});
+          const message = await Message.findOne({where: {id: payload.id}, relations: {
+            chat: {
+              members: true
+            }
+          }});
       
           if (!message) {
             return false;
           }
-        
           return message.chat!.members.some((member) => member.activeSessionToken?.includes(context));
         },
       })
@@ -28,6 +31,7 @@ export class MessageResolver {
             id: messagePayload.id,
             content: messagePayload.content,
             sender: messagePayload.sender,
+            chat: messagePayload.chat,
             createdAt: messagePayload.createdAt,
         }
       }
@@ -38,34 +42,32 @@ export class MessageResolver {
         return "OK"
     }
 
-    @Mutation(() => GeneralResponse)
+    @Mutation(() => Message)
     @UseMiddleware(AuthMiddleware)
     async sendMessage(
         @Arg("toUserId") toUserId: string,
         @Arg("content") content: string,
         @PubSub("NEW_MESSAGE") publishNewMessage: Publisher<Message>,
         @Ctx() { req, userId }: Context
-    ): Promise<GeneralResponse> {
+    ): Promise<Message | null> {
         try {
             const existingChat = await MessagingService.existingChat(userId!, toUserId);
 
             if (existingChat) {
                 const message = await MessagingService.sendMessage(userId!, toUserId, content);
                 await publishNewMessage(message);
+                return message;
             } else {
                 await MessagingService.createChat(userId!, toUserId);
                 const message = await MessagingService.sendMessage(userId!, toUserId, content);
                 await publishNewMessage(message);
+                return message;
             }
-            return {
-                success: true,
-            };
+            
+            
         } catch (error) {
             console.error("Error sending message:", error);
-            return {
-                error: { field: "Error", message: "Something went wrong" },
-            };
-
+            return null
         }
 
 
@@ -79,22 +81,6 @@ export class MessageResolver {
         try {
             const chats = await MessagingService.getChats(userId!);
             return chats;
-        } catch (error) {
-            console.error("Error getting chats:", error);
-            throw error;
-        }
-    }
-
-
-
-    @Query(() => Chat)
-    @UseMiddleware(AuthMiddleware)
-    async chat(
-        @Arg("id") id: string,
-    ): Promise<Chat | null> {
-        try {
-            const chat = await MessagingService.getChat(id);
-            return chat;
         } catch (error) {
             console.error("Error getting chats:", error);
             throw error;

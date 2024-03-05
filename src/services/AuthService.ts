@@ -1,8 +1,7 @@
 require('dotenv').config()
 
 import { User } from '../entities/User';
-import crypto, { randomUUID } from 'crypto';
-const secretKey = process.env.JWT_SECRET || "JWT_FALLBACK_SECRET_KEY";
+import crypto from 'crypto';
 
 class AuthService {
 
