@@ -7,6 +7,7 @@ import { User } from '../entities/User';
 import { AuthResponse } from '../responses/AuthResponse';
 import { AuthMiddleware } from '../middlewares/Authentication';
 import { UserResponse } from '../responses/General/UserResponse';
+import { Chat } from '../entities/Chat';
 
 
 @Resolver()
@@ -80,10 +81,12 @@ export class UserResolver {
 
     @Query(() => User, { nullable: true })
     @UseMiddleware(AuthMiddleware)
-    async user(
+    async authenticatedUser(
         @Ctx() { userId }: Context
     ): Promise<User | null> {
         const user = await UserService.getUserById(userId!);
         return user;
     }
+
+
 }

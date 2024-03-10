@@ -86,4 +86,38 @@ export class MessageResolver {
             throw error;
         }
     }
+
+    //get chat by id
+    @Query(() => Chat, { nullable: true })
+    @UseMiddleware(AuthMiddleware)
+    async chat(
+        @Arg("id") id: string,
+        @Ctx() { userId }: Context
+    ): Promise<Chat | null> {
+        try {
+            const chat = await MessagingService.getChatById(id);
+            return chat;
+        } catch (error) {
+            console.error("Error getting chat:", error);
+            throw error;
+        }
+
+    }
+
+
+    @Query(() => Chat, { nullable: true })
+    @UseMiddleware(AuthMiddleware)
+    async getChatbyUserId(
+        @Arg("id") id: string,
+        @Ctx() { userId }: Context
+    ): Promise<Chat | null> {
+        try {
+            const chat = await MessagingService.getChatByUserId(userId!,id);
+            return chat;
+        } catch (error) {
+            console.error("Error getting chat:", error);
+            throw error;
+        }
+        
+    }
 }
