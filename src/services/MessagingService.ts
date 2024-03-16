@@ -26,7 +26,9 @@ class MessagingService {
 
     // Assign Users to the participants property
     chat.members = [fromUser!, toUser!];
-
+    
+    //initialize list of messages
+    chat.messages = [];
     // Save the chat to the database
     await chat.save();
 
@@ -133,14 +135,20 @@ class MessagingService {
   }
 
   async getChatByUserId(userId: string,toUserId:string): Promise<Chat | null> {
-    return await Chat.createQueryBuilder('chat')
+    const chat = await Chat.createQueryBuilder('chat')
     .innerJoin('chat.members', 'participant')
     .where('participant.id IN (:...ids)', { ids: [userId, toUserId] })
     .groupBy('chat.id')
     .having('COUNT(DISTINCT participant.id) = :count', { count: 2 })
     .getOne();
-  }
 
+    if(chat){
+      return chat;
+    } else{
+      const chat = this.createChat(userId,toUserId);
+      return chat;
+    }
+  }
 }
 
 export default new MessagingService();

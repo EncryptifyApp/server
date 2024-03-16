@@ -8,7 +8,11 @@ import { Message } from "../entities/Message";
 import { User } from "../entities/User";
 
 @Resolver()
-export class MessageResolver {
+export class ChatResolver {
+    @Query(() => String)
+    async chatResolverHealthCheck(): Promise<String> {
+        return "OK"
+    }
 
     @Subscription({
         topics: "NEW_MESSAGE",
@@ -36,11 +40,6 @@ export class MessageResolver {
         }
       }
       
-
-    @Query(() => String)
-    async messageHealthCheck(): Promise<String> {
-        return "OK"
-    }
 
     @Mutation(() => Message)
     @UseMiddleware(AuthMiddleware)

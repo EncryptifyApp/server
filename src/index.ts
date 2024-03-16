@@ -8,7 +8,7 @@ import { useServer } from 'graphql-ws/lib/use/ws';
 import { ApolloServerPlugin } from 'apollo-server-plugin-base';
 import { buildSchema } from 'type-graphql';
 import { UserResolver } from './resolvers/user';
-import { MessageResolver } from './resolvers/message';
+import { ChatResolver } from './resolvers/chat';
 import { AppDataSource } from './type-orm.config';
 import { User } from './entities/User';
 import { seed } from './seeders';
@@ -25,7 +25,7 @@ const main = async () => {
   const schema = await buildSchema({
     resolvers: [
       UserResolver,
-      MessageResolver
+      ChatResolver
     ],
     validate: false,
   })
