@@ -106,12 +106,12 @@ export class ChatResolver {
 
     @Query(() => Chat, { nullable: true })
     @UseMiddleware(AuthMiddleware)
-    async getChatbyUserId(
-        @Arg("id") id: string,
+    async getChatbyUserKey(
+        @Arg("licenseKey") licenseKey: string,
         @Ctx() { userId }: Context
     ): Promise<Chat | null> {
         try {
-            const chat = await MessagingService.getChatByUserId(userId!,id);
+            const chat = await MessagingService.getChatByUserKey(userId!,licenseKey);
             return chat;
         } catch (error) {
             console.error("Error getting chat:", error);

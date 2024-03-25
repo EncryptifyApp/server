@@ -1,9 +1,23 @@
 import { User } from "../entities/User";
-import { GeneralResponse } from "../responses/General/GeneralResponse";
-import { Not } from "typeorm";
 
 
 class UserService {
+    generateLicenseKey() {
+        const length = 15;
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let key = '';
+    
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            key += characters[randomIndex];
+        }
+    
+        
+        key = key.slice(0, 5) + '-' + key.slice(5, 10) + '-' + key.slice(10, 15);   
+    
+        return key;
+    }
+
     async getUserById(id: string): Promise<User | null> {
         try {
             const user = await User.findOneBy({ id });
@@ -14,11 +28,11 @@ class UserService {
         }
     }
 
-    async getUserByAccountNumber(accountNumber: string): Promise<User | null> {
+    async getUserByLicenseKey(licenseKey: string): Promise<User | null> {
         try {
             const user = await User.findOne({
                 where: {
-                    accountNumber: accountNumber,
+                    licenseKey: licenseKey,
                 },
             });
 

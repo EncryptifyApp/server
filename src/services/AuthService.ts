@@ -12,13 +12,13 @@ class AuthService {
     return token;
   }
 
-  async AuthenticatedUser(accountNumber: string, username: string, publicKey: string, encryptedPrivateKey: string): Promise<string | null> {
+  async AuthenticatedUser(licenseKey: string, username: string, publicKey: string, encryptedPrivateKey: string): Promise<string | null> {
 
     try {
       // Try to find the user
       const user = await User.findOneOrFail({
         where: {
-          accountNumber: accountNumber,
+          licenseKey: licenseKey,
         },
       });
 

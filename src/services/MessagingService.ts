@@ -1,3 +1,4 @@
+import { MessageStatus } from "../enums/MessageStatus";
 import { Chat } from "../entities/Chat";
 import { Message } from "../entities/Message";
 import { User } from "../entities/User";
@@ -26,7 +27,7 @@ class MessagingService {
 
     // Assign Users to the participants property
     chat.members = [fromUser!, toUser!];
-    
+
     //initialize list of messages
     chat.messages = [];
     // Save the chat to the database
@@ -57,6 +58,9 @@ class MessagingService {
 
     // Create a new Message instance
     const message = new Message();
+
+    // Assign Message status
+    message.status = MessageStatus.SENT;
 
     // Assign Users to the sender and receiver properties
     message.sender = fromUser!;
@@ -134,18 +138,19 @@ class MessagingService {
       .getOne();
   }
 
-  async getChatByUserId(userId: string,toUserId:string): Promise<Chat | null> {
+  async getChatByUserKey(userId: string, licenseKey: string): Promise<Chat | null> {
+    const toUser = await User.findOne({ where: { licenseKey } });
     const chat = await Chat.createQueryBuilder('chat')
-    .innerJoin('chat.members', 'participant')
-    .where('participant.id IN (:...ids)', { ids: [userId, toUserId] })
-    .groupBy('chat.id')
-    .having('COUNT(DISTINCT participant.id) = :count', { count: 2 })
-    .getOne();
+      .innerJoin('chat.members', 'participant')
+      .where('participant.id IN (:...ids)', { ids: [userId, toUser?.id] })
+      .groupBy('chat.id')
+      .having('COUNT(DISTINCT participant.id) = :count', { count: 2 })
+      .getOne();
 
-    if(chat){
+    if (chat) {
       return chat;
-    } else{
-      const chat = this.createChat(userId,toUserId);
+    } else {
+      const chat = this.createChat(userId, toUser!.id);
       return chat;
     }
   }

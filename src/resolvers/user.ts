@@ -7,7 +7,6 @@ import { User } from '../entities/User';
 import { AuthResponse } from '../responses/AuthResponse';
 import { AuthMiddleware } from '../middlewares/Authentication';
 import { UserResponse } from '../responses/General/UserResponse';
-import { Chat } from '../entities/Chat';
 
 
 @Resolver()
@@ -19,7 +18,7 @@ export class UserResolver {
 
     @Query(() => UserResponse)
     async findAccount(
-        @Arg("accountNumber") accountNumber: string,
+        @Arg("licenseKey") licenseKey: string,
         @Ctx() { req }: Context
     ): Promise<UserResponse> {
         // Limiter for spam protection
@@ -31,7 +30,7 @@ export class UserResolver {
         //     };
         // }
         try {
-            const user = await UserService.getUserByAccountNumber(accountNumber);
+            const user = await UserService.getUserByLicenseKey(licenseKey);
 
             if(user) {
                 return {
@@ -53,14 +52,14 @@ export class UserResolver {
 
     @Mutation(() => AuthResponse)
     async authenticate(
-        @Arg("accountNumber") accountNumber: string,
+        @Arg("licenseKey") licenseKey: string,
         @Arg("username") username: string,
         @Arg("publicKey") publicKey: string,
         @Arg("encryptedPrivateKey") encryptedPrivateKey: string,
         @Ctx() { res }: Context
     ): Promise<AuthResponse> {
         try {
-            const sessionToken = await AuthService.AuthenticatedUser(accountNumber, username, publicKey, encryptedPrivateKey);
+            const sessionToken = await AuthService.AuthenticatedUser(licenseKey, username, publicKey, encryptedPrivateKey);
 
             if(sessionToken) {
                 return {

@@ -19,8 +19,9 @@ export class User extends BaseEntity {
     @Column({ nullable: true })
     profileUrl?: string;
 
+    @Field(() => String, { nullable: true })
     @Column({unique: true})
-    accountNumber: string;
+    licenseKey: string;
 
     @Column({ nullable: true })
     activeSessionToken?: string;

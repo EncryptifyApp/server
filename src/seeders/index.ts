@@ -1,5 +1,5 @@
 import { userSeeder } from "./user.seeder"
 
 export const seed = async () => {
-    await userSeeder(1);
+    await userSeeder(2);
 }

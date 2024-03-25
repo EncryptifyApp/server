@@ -2,6 +2,7 @@ import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDa
 import { Field,ObjectType } from 'type-graphql';
 import { User } from './User';
 import { Chat } from './Chat';
+import { MessageStatus } from '../enums/MessageStatus';
 
 @ObjectType()
 @Entity()
@@ -18,6 +19,13 @@ export class Message extends BaseEntity {
   @ManyToOne(() => User)
   @JoinTable()
   sender: User;
+
+  @Field(() => MessageStatus)
+  @Column({
+    type: 'enum',
+    enum: MessageStatus,
+  })
+  status: MessageStatus;
 
   @Field(() => Chat,{nullable:true})
   @ManyToOne(() => Chat)

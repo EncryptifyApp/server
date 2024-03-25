@@ -2,12 +2,12 @@ import { User } from "../entities/User";
 import { Subscription } from "../entities/Subscription";
 import { Chat } from "../entities/Chat";
 import { faker } from '@faker-js/faker';
-
+import UserService  from "../services/UserService";
 export const userSeeder = async (number: number) => {
     for (let i = 0; i < number; i++) {
         const user = User.create({
             profileUrl: faker.image.avatar(),
-            accountNumber: faker.string.numeric(12),
+            licenseKey: UserService.generateLicenseKey(),
         });
         await user.save();
 
@@ -19,14 +19,14 @@ export const userSeeder = async (number: number) => {
 
         await subscription.save();
 
-        // Create a chat between the current user and another random user
-        const randomUserId = await User.createQueryBuilder()
-            .where("id != :userId", { userId: user.id })
-            .getOne();
+        // // Create a chat between the current user and another random user
+        // const randomUserId = await User.createQueryBuilder()
+        //     .where("id != :userId", { userId: user.id })
+        //     .getOne();
 
-        if (randomUserId) {
-            await createChatWithoutMessages(user.id, randomUserId.id);
-        }
+        // if (randomUserId) {
+        //     await createChatWithoutMessages(user.id, randomUserId.id);
+        // }
     }
 }
 
