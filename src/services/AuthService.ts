@@ -5,8 +5,6 @@ import crypto from 'crypto';
 
 class AuthService {
 
-
-
   generateSessionToken(): string {
     const token = crypto.randomBytes(32).toString("hex");
     return token;

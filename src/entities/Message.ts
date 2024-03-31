@@ -1,4 +1,4 @@
-import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinTable } from 'typeorm';
+import { Entity, BaseEntity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinTable, ManyToMany } from 'typeorm';
 import { Field,ObjectType } from 'type-graphql';
 import { User } from './User';
 import { Chat } from './Chat';
@@ -26,6 +26,16 @@ export class Message extends BaseEntity {
     enum: MessageStatus,
   })
   status: MessageStatus;
+  
+  @Field(() => [User], { nullable: true })
+  @ManyToMany(() => User)
+  @JoinTable()
+  seenBy: User[];
+
+  @Field(() => [User], { nullable: true })
+  @ManyToMany(() => User)
+  @JoinTable()
+  deliveredTo: User[];
 
   @Field(() => Chat,{nullable:true})
   @ManyToOne(() => Chat)

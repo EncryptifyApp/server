@@ -154,6 +154,59 @@ class MessagingService {
       return chat;
     }
   }
+
+  //mark messages as read
+  async markMessagesAsRead(userId: string, messageIds: string[]): Promise<boolean> {
+    const user = await User.findOne({ where: { id: userId } });
+    try {
+      const messages
+        = await Message.createQueryBuilder('message')
+          .innerJoin('message.chat', 'chat')
+          .innerJoin('chat.members', 'member')
+          .where('member.id = :userId', { userId })
+          .andWhere('message.id IN (:...messageIds)', { messageIds })
+          .getMany();
+
+      messages.forEach(async (message) => {
+        message.seenBy = [...message.seenBy, user!];
+        await message.save();
+      }
+      );
+
+      return true;
+    }
+    catch (error) {
+      console.error(error);
+      return false;
+    }
+  }
+
+  //mark messages as delivered
+  async markMessagesAsDelivered(userId: string, messageIds: string[]): Promise<boolean> {
+    const
+      user = await User.findOne({ where: { id: userId } });
+    try {
+      const messages = await Message.createQueryBuilder('message')
+        .innerJoin('message.chat', 'chat')
+        .innerJoin('chat.members', 'member')
+        .where('member.id = :userId', { userId })
+        .andWhere('message.id IN (:...messageIds)', { messageIds })
+        .getMany();
+
+      messages.forEach(async (message) => {
+        message.deliveredTo = [...message.deliveredTo, user!];
+        await message.save();
+      }
+      );
+
+      return true;
+    }
+    catch (error) {
+      console.error(error);
+      return false;
+    }
+  }
 }
+
 
 export default new MessagingService();

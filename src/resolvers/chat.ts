@@ -14,6 +14,7 @@ export class ChatResolver {
         return "OK"
     }
 
+    //SUBSCRIPTION FOR NEW MESSAGE
     @Subscription({
         topics: "NEW_MESSAGE",
         filter: async ({ payload, context }) => {
@@ -38,7 +39,62 @@ export class ChatResolver {
             chat: messagePayload.chat,
             createdAt: messagePayload.createdAt,
         }
-      }
+    }
+
+
+    //SUBSCRIBTION FOR MESSAGE DELIVERED
+    @Subscription({
+        topics: "MESSAGE_DELIVERED",
+        filter: async ({ payload, context }) => {
+          const message = await Message.findOne({where: {id: payload.id}, relations: {
+            chat: {
+              members: true
+            }
+          }});
+      
+          if (!message) {
+            return false;
+          }
+          return message.chat!.members.some((member) => member.activeSessionToken?.includes(context));
+        },
+      })
+      messageDelivered(@Root() messagePayload: Message): Message {
+        //@ts-ignore
+        return {
+            id: messagePayload.id,
+            content: messagePayload.content,
+            sender: messagePayload.sender,
+            chat: messagePayload.chat,
+            createdAt: messagePayload.createdAt,
+        }
+    }
+
+    //SUBSCRIBTION FOR MESSAGE READ
+    @Subscription({
+        topics: "MESSAGE_READ",
+        filter: async ({ payload, context }) => {
+          const message = await Message.findOne({where: {id: payload.id}, relations: {
+            chat: {
+              members: true
+            }
+          }});
+      
+          if (!message) {
+            return false;
+          }
+          return message.chat!.members.some((member) => member.activeSessionToken?.includes(context));
+        },
+      })
+      messageRead(@Root() messagePayload: Message): Message {
+        //@ts-ignore
+        return {
+            id: messagePayload.id,
+            content: messagePayload.content,
+            sender: messagePayload.sender,
+            chat: messagePayload.chat,
+            createdAt: messagePayload.createdAt,
+        }
+    }
       
 
     @Mutation(() => Message)
