@@ -42,58 +42,35 @@ export class ChatResolver {
     }
 
 
-    //SUBSCRIBTION FOR MESSAGE DELIVERED
-    @Subscription({
+    //SUBSCRIBTION FOR MESSAGE DELIVERED THAT RETURNS LIST OF MESSAGE IDS
+    @Subscription(() => [String], {
         topics: "MESSAGE_DELIVERED",
         filter: async ({ payload, context }) => {
-          const message = await Message.findOne({where: {id: payload.id}, relations: {
-            chat: {
-              members: true
+            const user = await User.findOne({where: {id: context}});
+            if (!user) {
+                return false;
             }
-          }});
-      
-          if (!message) {
-            return false;
-          }
-          return message.chat!.members.some((member) => member.activeSessionToken?.includes(context));
-        },
-      })
-      messageDelivered(@Root() messagePayload: Message): Message {
-        //@ts-ignore
-        return {
-            id: messagePayload.id,
-            content: messagePayload.content,
-            sender: messagePayload.sender,
-            chat: messagePayload.chat,
-            createdAt: messagePayload.createdAt,
+            return payload.includes(user.id);
         }
+    })
+    messageDelivered(@Root() messageIds: string[]): string[] {
+        return messageIds;
     }
+   
 
-    //SUBSCRIBTION FOR MESSAGE READ
-    @Subscription({
+    //SUBSCRIBTION FOR MESSAGE READ THAT RETURNS LIST OF MESSAGE IDS
+    @Subscription(() => [String], {
         topics: "MESSAGE_READ",
         filter: async ({ payload, context }) => {
-          const message = await Message.findOne({where: {id: payload.id}, relations: {
-            chat: {
-              members: true
+            const user = await User.findOne({where: {id: context}});
+            if (!user) {
+                return false;
             }
-          }});
-      
-          if (!message) {
-            return false;
-          }
-          return message.chat!.members.some((member) => member.activeSessionToken?.includes(context));
-        },
-      })
-      messageRead(@Root() messagePayload: Message): Message {
-        //@ts-ignore
-        return {
-            id: messagePayload.id,
-            content: messagePayload.content,
-            sender: messagePayload.sender,
-            chat: messagePayload.chat,
-            createdAt: messagePayload.createdAt,
+            return payload.includes(user.id);
         }
+    })
+    messageRead(@Root() messageIds: string[]): string[] {
+        return messageIds;
     }
       
 
@@ -124,9 +101,58 @@ export class ChatResolver {
             console.error("Error sending message:", error);
             return null
         }
-
-
     }
+
+    //mark messages as delivered
+    @Mutation(() => GeneralResponse)
+    @UseMiddleware(AuthMiddleware)
+    async markAsDelivered(
+        @Arg("messageIds", () => [String]) messageIds: string[],
+        @PubSub("MESSAGE_DELIVERED") publishMessageDelivered: Publisher<string[]>,
+        @Ctx() { req, userId }: Context
+    ): Promise<GeneralResponse> {
+        try {
+            await MessagingService.markMessagesAsDelivered(userId!,messageIds);
+            await publishMessageDelivered(messageIds);
+            return {
+                success: true,
+            }
+        } catch (error) {
+            console.error("Error marking messages as delivered:", error);
+            return {
+                error: {
+                    field: "Error",
+                    message: error.message,
+                },
+            }
+        }
+    }
+
+    //mark messages as read
+    @Mutation(() => GeneralResponse)
+    @UseMiddleware(AuthMiddleware)
+    async markAsRead(
+        @Arg("messageIds", () => [String]) messageIds: string[],
+        @PubSub("MESSAGE_READ") publishMessageRead: Publisher<string[]>,
+        @Ctx() { req, userId }: Context
+    ): Promise<GeneralResponse> {
+        try {
+            await MessagingService.markMessagesAsRead(userId!,messageIds);
+            await publishMessageRead(messageIds);
+            return {
+                success: true,
+            }
+        } catch (error) {
+            console.error("Error marking messages as read:", error);
+            return {
+                error: {
+                    field: "Error",
+                    message: error.message,
+                },
+            }
+        }
+    }
+
 
     @Query(() => [Chat])
     @UseMiddleware(AuthMiddleware)
