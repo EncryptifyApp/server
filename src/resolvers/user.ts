@@ -22,13 +22,13 @@ export class UserResolver {
         @Ctx() { req }: Context
     ): Promise<UserResponse> {
         // Limiter for spam protection
-        try {
-            await RateLimiter.consume(req.ip);
-        } catch (error) {
-            return {
-                error: { field: "Error", message: "You tried too many times, please try again later" },
-            };
-        }
+        // try {
+        //     await RateLimiter.consume(req.ip);
+        // } catch (error) {
+        //     return {
+        //         error: { field: "Error", message: "You tried too many times, please try again later" },
+        //     };
+        // }
         try {
             const user = await UserService.getUserByLicenseKey(licenseKey);
 

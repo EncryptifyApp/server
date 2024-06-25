@@ -20,7 +20,7 @@ export class Message extends BaseEntity {
   @JoinTable()
   sender: User;
 
-  @Field(() => MessageStatus)
+  @Field(() => MessageStatus,{nullable:true})
   @Column({
     type: 'enum',
     enum: MessageStatus,
