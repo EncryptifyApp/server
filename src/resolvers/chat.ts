@@ -18,19 +18,21 @@ export class ChatResolver {
     @Subscription({
         topics: "NEW_MESSAGE",
         filter: async ({ payload, context }) => {
-          const message = await Message.findOne({where: {id: payload.id}, relations: {
-            chat: {
-              members: true
+            const message = await Message.findOne({
+                where: { id: payload.id }, relations: {
+                    chat: {
+                        members: true
+                    }
+                }
+            });
+
+            if (!message) {
+                return false;
             }
-          }});
-      
-          if (!message) {
-            return false;
-          }
-          return message.chat!.members.some((member) => member.activeSessionToken?.includes(context));
+            return message.chat!.members.some((member) => member.activeSessionToken?.includes(context));
         },
-      })
-      newMessage(@Root() messagePayload: Message): Message {
+    })
+    newMessage(@Root() messagePayload: Message): Message {
         //@ts-ignore
         return {
             id: messagePayload.id,
@@ -46,7 +48,7 @@ export class ChatResolver {
     @Subscription(() => [String], {
         topics: "MESSAGE_DELIVERED",
         filter: async ({ payload, context }) => {
-            const user = await User.findOne({where: {id: context}});
+            const user = await User.findOne({ where: { id: context } });
             if (!user) {
                 return false;
             }
@@ -56,13 +58,13 @@ export class ChatResolver {
     messageDelivered(@Root() messageIds: string[]): string[] {
         return messageIds;
     }
-   
+
 
     //SUBSCRIBTION FOR MESSAGE READ THAT RETURNS LIST OF MESSAGE IDS
     @Subscription(() => [String], {
         topics: "MESSAGE_READ",
         filter: async ({ payload, context }) => {
-            const user = await User.findOne({where: {id: context}});
+            const user = await User.findOne({ where: { id: context } });
             if (!user) {
                 return false;
             }
@@ -72,7 +74,7 @@ export class ChatResolver {
     messageRead(@Root() messageIds: string[]): string[] {
         return messageIds;
     }
-      
+
 
     @Mutation(() => Message)
     @UseMiddleware(AuthMiddleware)
@@ -95,8 +97,27 @@ export class ChatResolver {
                 await publishNewMessage(message);
                 return message;
             }
-            
-            
+
+
+        } catch (error) {
+            console.error("Error sending message:", error);
+            return null
+        }
+    }
+
+    //send pending message
+    @Mutation(() => Message)
+    @UseMiddleware(AuthMiddleware)
+    async sendPendingMessage(
+        @Arg("chatId") chatId: string,
+        @Arg("content") content: string,
+        @PubSub("NEW_MESSAGE") publishNewMessage: Publisher<Message>,
+        @Ctx() { req, userId }: Context
+    ): Promise<Message | null> {
+        try {
+            const message = await MessagingService.sendPendingMessage(userId!, chatId, content);
+            await publishNewMessage(message);
+            return message;
         } catch (error) {
             console.error("Error sending message:", error);
             return null
@@ -112,7 +133,7 @@ export class ChatResolver {
         @Ctx() { req, userId }: Context
     ): Promise<GeneralResponse> {
         try {
-            await MessagingService.markMessagesAsDelivered(userId!,messageIds);
+            await MessagingService.markMessagesAsDelivered(userId!, messageIds);
             await publishMessageDelivered(messageIds);
             return {
                 success: true,
@@ -137,7 +158,7 @@ export class ChatResolver {
         @Ctx() { req, userId }: Context
     ): Promise<GeneralResponse> {
         try {
-            await MessagingService.markMessagesAsRead(userId!,messageIds);
+            await MessagingService.markMessagesAsRead(userId!, messageIds);
             await publishMessageRead(messageIds);
             return {
                 success: true,
@@ -188,17 +209,17 @@ export class ChatResolver {
 
     @Query(() => Chat, { nullable: true })
     @UseMiddleware(AuthMiddleware)
-    async getChatbyUserKey(
-        @Arg("licenseKey") licenseKey: string,
+    async getChatbyUserId(
+        @Arg("id") id: string,
         @Ctx() { userId }: Context
     ): Promise<Chat | null> {
         try {
-            const chat = await MessagingService.getChatByUserKey(userId!,licenseKey);
+            const chat = await MessagingService.getChatByUserId(userId!, id);
             return chat;
         } catch (error) {
             console.error("Error getting chat:", error);
             throw error;
         }
-        
+
     }
 }

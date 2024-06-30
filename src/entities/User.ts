@@ -34,6 +34,10 @@ export class User extends BaseEntity {
     @Column({nullable: true})
     encryptedPrivateKey?: string;
 
+    @Field(() => String, { nullable: true })
+    @Column({nullable: true})
+    expoPushToken?: string;
+
     @OneToMany(() => Chat, chat => chat.members)
     chats: Chat[];
 

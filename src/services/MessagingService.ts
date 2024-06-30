@@ -75,7 +75,17 @@ class MessagingService {
     return message;
   }
 
-
+  async sendPendingMessage(fromUserId: string, chatId: string, content: string) : Promise<Message> {
+    const fromUser = await User.findOne({ where: { id: fromUserId } });
+    const chat = await Chat.findOne({ where: { id: chatId } });
+    const message = new Message();
+    message.status = MessageStatus.SENT;
+    message.sender = fromUser!;
+    message.content = content;
+    message.chat = chat!;
+    await message.save();
+    return message;
+  }
 
   async getChats(userId: string): Promise<Chat[]> {
     const chats = await Chat.createQueryBuilder("chat")
@@ -138,11 +148,11 @@ class MessagingService {
       .getOne();
   }
 
-  async getChatByUserKey(userId: string, licenseKey: string): Promise<Chat | null> {
-    const toUser = await User.findOne({ where: { licenseKey } });
+  async getChatByUserId(fromUserId: string, toUserId: string): Promise<Chat | null> {
+    const toUser = await User.findOne({ where: { id:toUserId } });
     const chat = await Chat.createQueryBuilder('chat')
       .innerJoin('chat.members', 'participant')
-      .where('participant.id IN (:...ids)', { ids: [userId, toUser?.id] })
+      .where('participant.id IN (:...ids)', { ids: [fromUserId, toUser?.id] })
       .groupBy('chat.id')
       .having('COUNT(DISTINCT participant.id) = :count', { count: 2 })
       .getOne();
@@ -150,7 +160,7 @@ class MessagingService {
     if (chat) {
       return chat;
     } else {
-      const chat = this.createChat(userId, toUser!.id);
+      const chat = this.createChat(fromUserId, toUser!.id);
       return chat;
     }
   }

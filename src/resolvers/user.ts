@@ -7,6 +7,7 @@ import { User } from '../entities/User';
 import { AuthResponse } from '../responses/AuthResponse';
 import { AuthMiddleware } from '../middlewares/Authentication';
 import { UserResponse } from '../responses/General/UserResponse';
+import { GeneralResponse } from '../responses/General/GeneralResponse';
 
 
 @Resolver()
@@ -32,7 +33,7 @@ export class UserResolver {
         try {
             const user = await UserService.getUserByLicenseKey(licenseKey);
 
-            if(user) {
+            if (user) {
                 return {
                     user: user
                 }
@@ -61,7 +62,7 @@ export class UserResolver {
         try {
             const sessionToken = await AuthService.AuthenticatedUser(licenseKey, username, publicKey, encryptedPrivateKey);
 
-            if(sessionToken) {
+            if (sessionToken) {
                 return {
                     sessionToken: sessionToken
                 }
@@ -87,4 +88,22 @@ export class UserResolver {
         return user;
     }
 
+
+    @Mutation(() => GeneralResponse)
+    @UseMiddleware(AuthMiddleware)
+    async updateUserExpoPushToken(
+        @Arg('userId') userId: string,
+        @Arg('expoPushToken') expoPushToken: string
+    ): Promise<GeneralResponse> {
+        const updated = await UserService.updateUserExpoPushToken(userId, expoPushToken);
+        if(updated) {
+            return {
+                success: true
+            }
+        } else {
+            return {
+                error: { field: "Error", message: "Something went wrong, try again later" }
+            }
+        }
+    }
 }

@@ -2,7 +2,7 @@ import { User } from "../entities/User";
 
 
 class UserService {
-    generateLicenseKey() {
+    generateLicenseKey(): string {
         const length = 15;
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let key = '';
@@ -42,6 +42,24 @@ class UserService {
             throw error;
         }
     }
+
+    async updateUserExpoPushToken(userId: string, expoPushToken: string): Promise<boolean> {
+        try {
+            const user = await User.findOneBy({ id: userId });
+            if (!user) {
+                console.error("User not found");
+                return false;
+            }
+            
+            user.expoPushToken = expoPushToken;
+            await user.save();
+            return true;
+        } catch (error) {
+            console.error("Error updating user push token", error);
+            return false;
+        }
+    }
+
 }
 
 export default new UserService();
