@@ -38,6 +38,7 @@ class MessagingService {
 
 
   async sendMessage(fromUserId: string, toUserId: string, content: string): Promise<Message> {
+    
     // Fetch User entities based on user IDs
     const fromUser = await User.findOne({ where: { id: fromUserId } });
     const toUser = await User.findOne({ where: { id: toUserId } });
@@ -69,9 +70,13 @@ class MessagingService {
     message.content = content;
     message.chat = chat;
     message.chat.members = [fromUser!, toUser!];
-
+    
     // Save the message to the database
     await message.save();
+
+
+    console.log('message sent',message);  
+
     return message;
   }
 
