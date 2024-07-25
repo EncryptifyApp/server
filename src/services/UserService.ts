@@ -1,3 +1,4 @@
+import { Subscription } from "../entities/Subscription";
 import { User } from "../entities/User";
 
 
@@ -40,6 +41,23 @@ class UserService {
         } catch (error) {
             console.error("Error fetching user", error);
             throw error;
+        }
+    }
+
+    async getSubscriptionEndDate(userId: string): Promise<Date | null> {
+        try {
+            const subscription = await Subscription.findOne({
+                where: {
+                    user: {
+                        id: userId,
+                    },
+                }
+            });
+            
+            return subscription!.endDate;
+        } catch (error) {
+            console.error("Error fetching subscription end date", error);
+            return null;
         }
     }
 

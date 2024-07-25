@@ -3,10 +3,13 @@ import { FieldError } from "./FieldError";
 import { User } from "../../entities/User";
 
 @ObjectType()
-export class UserResponse {
+export class AuthenticationUserResponse {
   @Field(() => FieldError, { nullable: true })
   error?: FieldError;
 
   @Field(() => User, { nullable: true })
   user?: User;
+
+  @Field(() => Date, { nullable: true })
+  subscriptionEndDate?: Date;
 }

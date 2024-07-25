@@ -6,7 +6,6 @@ import UserService  from "../services/UserService";
 export const userSeeder = async (number: number) => {
     for (let i = 0; i < number; i++) {
         const user = User.create({
-            profileUrl: faker.image.avatar(),
             licenseKey: UserService.generateLicenseKey(),
         });
         await user.save();

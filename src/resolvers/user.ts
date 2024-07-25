@@ -3,10 +3,9 @@ import UserService from '../services/UserService';
 import { RateLimiter } from '../services/RateLimiter';
 import { Context } from '../types';
 import AuthService from '../services/AuthService';
-import { User } from '../entities/User';
 import { AuthResponse } from '../responses/AuthResponse';
 import { AuthMiddleware } from '../middlewares/Authentication';
-import { UserResponse } from '../responses/General/UserResponse';
+import { AuthenticationUserResponse } from '../responses/General/AuthenticationUserResponse';
 import { GeneralResponse } from '../responses/General/GeneralResponse';
 
 
@@ -17,11 +16,11 @@ export class UserResolver {
         return "OK";
     }
 
-    @Query(() => UserResponse)
+    @Query(() => AuthenticationUserResponse)
     async findAccount(
         @Arg("licenseKey") licenseKey: string,
         @Ctx() { req }: Context
-    ): Promise<UserResponse> {
+    ): Promise<AuthenticationUserResponse> {
         // Limiter for spam protection
         // try {
         //     await RateLimiter.consume(req.ip);
@@ -79,13 +78,23 @@ export class UserResolver {
     }
 
 
-    @Query(() => User, { nullable: true })
+    @Query(() => AuthenticationUserResponse, { nullable: true })
     @UseMiddleware(AuthMiddleware)
     async authenticatedUser(
         @Ctx() { userId }: Context
-    ): Promise<User | null> {
+    ): Promise<AuthenticationUserResponse | null> {
         const user = await UserService.getUserById(userId!);
-        return user;
+        if(!user) {
+            return {
+                error: { field: "Not Found", message: "User not found" }
+            };
+        }
+        const subscriptionEndDate = await UserService.getSubscriptionEndDate(userId!);
+        
+        return {
+            user: user,
+            subscriptionEndDate:subscriptionEndDate!
+        };
     }
 
 

@@ -74,9 +74,6 @@ class MessagingService {
     // Save the message to the database
     await message.save();
 
-
-    console.log('message sent',message);  
-
     return message;
   }
 
