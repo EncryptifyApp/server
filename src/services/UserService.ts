@@ -61,22 +61,6 @@ class UserService {
         }
     }
 
-    async updateUserExpoPushToken(userId: string, expoPushToken: string): Promise<boolean> {
-        try {
-            const user = await User.findOneBy({ id: userId });
-            if (!user) {
-                console.error("User not found");
-                return false;
-            }
-            
-            user.expoPushToken = expoPushToken;
-            await user.save();
-            return true;
-        } catch (error) {
-            console.error("Error updating user push token", error);
-            return false;
-        }
-    }
 
 }
 

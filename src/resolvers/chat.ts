@@ -6,6 +6,7 @@ import { AuthMiddleware } from "../middlewares/Authentication";
 import { Chat } from "../entities/Chat";
 import { Message } from "../entities/Message";
 import { User } from "../entities/User";
+import NotificationService from "../services/NotificationService";
 
 @Resolver()
 export class ChatResolver {
@@ -44,38 +45,6 @@ export class ChatResolver {
     }
 
 
-    //SUBSCRIBTION FOR MESSAGE DELIVERED THAT RETURNS LIST OF MESSAGE IDS
-    @Subscription(() => [String], {
-        topics: "MESSAGE_DELIVERED",
-        filter: async ({ payload, context }) => {
-            const user = await User.findOne({ where: { id: context } });
-            if (!user) {
-                return false;
-            }
-            return payload.includes(user.id);
-        }
-    })
-    messageDelivered(@Root() messageIds: string[]): string[] {
-        return messageIds;
-    }
-
-
-    //SUBSCRIBTION FOR MESSAGE READ THAT RETURNS LIST OF MESSAGE IDS
-    @Subscription(() => [String], {
-        topics: "MESSAGE_READ",
-        filter: async ({ payload, context }) => {
-            const user = await User.findOne({ where: { id: context } });
-            if (!user) {
-                return false;
-            }
-            return payload.includes(user.id);
-        }
-    })
-    messageRead(@Root() messageIds: string[]): string[] {
-        return messageIds;
-    }
-
-
     @Mutation(() => Message)
     @UseMiddleware(AuthMiddleware)
     async sendMessage(
@@ -86,24 +55,47 @@ export class ChatResolver {
     ): Promise<Message | null> {
         try {
             const existingChat = await MessagingService.existingChat(userId!, toUserId);
+            const sender = await User.findOne({ where: { id: userId! } });
+            const recipient = await User.findOne({ where: { id: toUserId } });
+
+            let message: Message | null = null;
 
             if (existingChat) {
-                const message = await MessagingService.sendMessage(userId!, toUserId, content);
-                await publishNewMessage(message);
-                return message;
+                message = await MessagingService.sendMessage(userId!, toUserId, content);
             } else {
                 await MessagingService.createChat(userId!, toUserId);
-                const message = await MessagingService.sendMessage(userId!, toUserId, content);
-                await publishNewMessage(message);
+                message = await MessagingService.sendMessage(userId!, toUserId, content);
+            }
+
+            if (message) {
+                // Publish new message
+                const publishPromise = publishNewMessage(message);
+
+                //send notification
+                if (recipient!.expoPushToken) {
+                    const notifyPromise = NotificationService.sendPushNotification({
+                        userExpoToken: recipient?.expoPushToken!,
+                        title: "Encryptify",
+                        body: `You have a new message from ${sender?.username}`,
+                        data: { chatId: message.chat!.id },
+                    });
+                    // Wait for both operations to complete, but don't block the function return
+                    Promise.allSettled([publishPromise, notifyPromise]);
+                } else {
+                    // If no push token, just resolve the publish promise
+                    Promise.allSettled([publishPromise]);
+                }
+
                 return message;
             }
 
-
+            return null;
         } catch (error) {
             console.error("Error sending message:", error);
-            return null
+            return null;
         }
     }
+
 
     //send pending message
     @Mutation(() => Message)

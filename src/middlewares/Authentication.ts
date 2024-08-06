@@ -9,7 +9,6 @@ export const AuthMiddleware: MiddlewareFn<Context> = async ({ context }, next) =
         if (!context.req || !context.req.headers) {
             throw new Error("Request or headers missing");
         }
-        console.log("AuthMiddleware",context.req.headers);
         const sessionToken = context.req.headers["authorization"];
         if (!sessionToken) {
             throw new Error("Authorization token missing");

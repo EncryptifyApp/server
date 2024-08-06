@@ -56,10 +56,11 @@ export class UserResolver {
         @Arg("username") username: string,
         @Arg("publicKey") publicKey: string,
         @Arg("encryptedPrivateKey") encryptedPrivateKey: string,
+        @Arg("expoPushToken") expoPushToken: string,
         @Ctx() { res }: Context
     ): Promise<AuthResponse> {
         try {
-            const sessionToken = await AuthService.AuthenticatedUser(licenseKey, username, publicKey, encryptedPrivateKey);
+            const sessionToken = await AuthService.AuthenticatedUser(licenseKey, username, publicKey, encryptedPrivateKey, expoPushToken);
 
             if (sessionToken) {
                 return {
@@ -95,24 +96,5 @@ export class UserResolver {
             user: user,
             subscriptionEndDate:subscriptionEndDate!
         };
-    }
-
-
-    @Mutation(() => GeneralResponse)
-    @UseMiddleware(AuthMiddleware)
-    async updateUserExpoPushToken(
-        @Arg('userId') userId: string,
-        @Arg('expoPushToken') expoPushToken: string
-    ): Promise<GeneralResponse> {
-        const updated = await UserService.updateUserExpoPushToken(userId, expoPushToken);
-        if(updated) {
-            return {
-                success: true
-            }
-        } else {
-            return {
-                error: { field: "Error", message: "Something went wrong, try again later" }
-            }
-        }
     }
 }

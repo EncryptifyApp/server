@@ -10,7 +10,10 @@ class AuthService {
     return token;
   }
 
-  async AuthenticatedUser(licenseKey: string, username: string, publicKey: string, encryptedPrivateKey: string): Promise<string | null> {
+  async AuthenticatedUser(licenseKey: string, username: string, publicKey: string, encryptedPrivateKey: string,
+    expoPushToken:string
+
+  ): Promise<string | null> {
 
     try {
       // Try to find the user
@@ -28,6 +31,7 @@ class AuthService {
       user.username = username;
       user.publicKey = publicKey;
       user.encryptedPrivateKey = encryptedPrivateKey;
+      user.expoPushToken = expoPushToken;
 
       await user.save();
       // Return the new session token
