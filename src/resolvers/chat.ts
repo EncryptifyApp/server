@@ -116,57 +116,6 @@ export class ChatResolver {
         }
     }
 
-    //mark messages as delivered
-    @Mutation(() => GeneralResponse)
-    @UseMiddleware(AuthMiddleware)
-    async markAsDelivered(
-        @Arg("messageIds", () => [String]) messageIds: string[],
-        @PubSub("MESSAGE_DELIVERED") publishMessageDelivered: Publisher<string[]>,
-        @Ctx() { req, userId }: Context
-    ): Promise<GeneralResponse> {
-        try {
-            await MessagingService.markMessagesAsDelivered(userId!, messageIds);
-            await publishMessageDelivered(messageIds);
-            return {
-                success: true,
-            }
-        } catch (error) {
-            console.error("Error marking messages as delivered:", error);
-            return {
-                error: {
-                    field: "Error",
-                    message: error.message,
-                },
-            }
-        }
-    }
-
-    //mark messages as read
-    @Mutation(() => GeneralResponse)
-    @UseMiddleware(AuthMiddleware)
-    async markAsRead(
-        @Arg("messageIds", () => [String]) messageIds: string[],
-        @PubSub("MESSAGE_READ") publishMessageRead: Publisher<string[]>,
-        @Ctx() { req, userId }: Context
-    ): Promise<GeneralResponse> {
-        try {
-            await MessagingService.markMessagesAsRead(userId!, messageIds);
-            await publishMessageRead(messageIds);
-            return {
-                success: true,
-            }
-        } catch (error) {
-            console.error("Error marking messages as read:", error);
-            return {
-                error: {
-                    field: "Error",
-                    message: error.message,
-                },
-            }
-        }
-    }
-
-
     @Query(() => [Chat])
     @UseMiddleware(AuthMiddleware)
     async chats(

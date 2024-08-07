@@ -26,16 +26,6 @@ export class Message extends BaseEntity {
     enum: MessageStatus,
   })
   status: MessageStatus;
-  
-  @Field(() => [User], { nullable: true })
-  @ManyToMany(() => User)
-  @JoinTable()
-  seenBy: User[];
-
-  @Field(() => [User], { nullable: true })
-  @ManyToMany(() => User)
-  @JoinTable()
-  deliveredTo: User[];
 
   @Field(() => Chat,{nullable:true})
   @ManyToOne(() => Chat)
