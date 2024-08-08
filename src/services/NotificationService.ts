@@ -9,6 +9,7 @@ class NotificationService {
       title: message.title,
       body: message.body,
       data: message.data,
+      ttl: 2419200
     };
 
     const response = await fetch('https://exp.host/--/api/v2/push/send', {
