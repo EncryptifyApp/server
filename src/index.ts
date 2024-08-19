@@ -11,16 +11,14 @@ import { UserResolver } from './resolvers/user';
 import { ChatResolver } from './resolvers/chat';
 import { AppDataSource } from './type-orm.config';
 import { User } from './entities/User';
-import { seed } from './seeders';
 
-
+const graphqlUploadExpress = require('graphql-upload/graphqlUploadExpress.js');
 
 const main = async () => {
   //type-orm
   await AppDataSource.initialize().then(() => {
     console.log(`🚀  Database ready`);
   })
-  // await seed();
 
   const schema = await buildSchema({
     resolvers: [
@@ -34,6 +32,7 @@ const main = async () => {
   // server and the ApolloServer to this HTTP server.
   const app = express();
   const httpServer = createServer(app);
+
 
   // Create our WebSocket server using the HTTP server we just set up.
   const wsServer = new WebSocketServer({
@@ -68,7 +67,7 @@ const main = async () => {
     csrfPrevention: true,
     cache: "bounded",
     context: ({ req, res }) => ({ req, res }),
-
+   
     plugins: [
       // Proper shutdown for the HTTP server.
       ApolloServerPluginDrainHttpServer({ httpServer }) as ApolloServerPlugin,
@@ -88,6 +87,9 @@ const main = async () => {
   });
 
   await apolloServer.start();
+
+  app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }));
+
   apolloServer.applyMiddleware({
     app,
   });

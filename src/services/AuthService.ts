@@ -1,7 +1,9 @@
 require('dotenv').config()
-
+import fs from 'fs';
 import { User } from '../entities/User';
 import crypto from 'crypto';
+//@ts-ignore
+import { FileUpload } from "graphql-upload";
 
 class AuthService {
 
@@ -10,37 +12,54 @@ class AuthService {
     return token;
   }
 
-  async AuthenticatedUser(licenseKey: string, username: string, publicKey: string, encryptedPrivateKey: string,
-    expoPushToken:string
-
-  ): Promise<string | null> {
-
+  async AuthenticatedUser(
+    licenseKey: string,
+    username: string,
+    publicKey: string,
+    encryptedPrivateKey: string,
+    expoPushToken: string,
+    profilePic: FileUpload | null
+): Promise<string | null> {
     try {
-      // Try to find the user
-      const user = await User.findOneOrFail({
-        where: {
-          licenseKey: licenseKey,
-        },
-      });
+        // Try to find the user
+        const user = await User.findOneOrFail({
+            where: {
+                licenseKey: licenseKey,
+            },
+        });
 
-      user.activeSessionToken = undefined;
-      // Generate a new session token
-      const newSessionToken = this.generateSessionToken();
+        // Generate a new session token
+        const newSessionToken = this.generateSessionToken();
 
-      user.activeSessionToken = newSessionToken;
-      user.username = username;
-      user.publicKey = publicKey;
-      user.encryptedPrivateKey = encryptedPrivateKey;
-      user.expoPushToken = expoPushToken;
+        user.activeSessionToken = newSessionToken;
+        user.username = username;
+        user.publicKey = publicKey;
+        user.encryptedPrivateKey = encryptedPrivateKey;
+        user.expoPushToken = expoPushToken;
 
-      await user.save();
-      // Return the new session token
-      return newSessionToken;
+        // Handle the profile picture if provided
+        if (profilePic) {
+            const { createReadStream, filename } = await profilePic;
+            const stream = createReadStream();
+            const path = `./uploads/${filename}`;
+            await new Promise((resolve, reject) =>
+                stream
+                    .pipe(fs.createWriteStream(path))
+                    .on("finish", resolve)
+                    .on("error", reject)
+            );
+            user.profileUrl = path;
+        }
+
+        await user.save();
+        // Return the new session token
+        return newSessionToken;
     } catch (error) {
-      console.error(error);
-      return null;
+        console.error(error);
+        return null;
     }
-  }
+}
+
 
 
 }

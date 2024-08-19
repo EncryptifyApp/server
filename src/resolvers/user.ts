@@ -8,6 +8,10 @@ import { AuthMiddleware } from '../middlewares/Authentication';
 import { AuthenticationUserResponse } from '../responses/General/AuthenticationUserResponse';
 import { GeneralResponse } from '../responses/General/GeneralResponse';
 
+const GraphQLUpload = require('graphql-upload/GraphQLUpload.js');
+import { FileUpload } from "graphql-upload";
+
+
 
 @Resolver()
 export class UserResolver {
@@ -57,26 +61,27 @@ export class UserResolver {
         @Arg("publicKey") publicKey: string,
         @Arg("encryptedPrivateKey") encryptedPrivateKey: string,
         @Arg("expoPushToken") expoPushToken: string,
-        @Ctx() { res }: Context
+        @Arg("profilePic", () => GraphQLUpload, { nullable: true }) profilePic: any | null, 
     ): Promise<AuthResponse> {
         try {
-            const sessionToken = await AuthService.AuthenticatedUser(licenseKey, username, publicKey, encryptedPrivateKey, expoPushToken);
+            const sessionToken = await AuthService.AuthenticatedUser(licenseKey, username, publicKey, encryptedPrivateKey, expoPushToken, profilePic);
 
             if (sessionToken) {
                 return {
                     sessionToken: sessionToken
-                }
+                };
             }
             return {
                 error: { field: "Error", message: "Something went wrong, try again later" }
-            }
+            };
         } catch (error) {
             console.error("Error authenticating user", error);
             return {
                 error: { field: "Error", message: "Something went wrong, try again later" }
-            }
+            };
         }
     }
+
 
 
     @Query(() => AuthenticationUserResponse, { nullable: true })
@@ -85,16 +90,16 @@ export class UserResolver {
         @Ctx() { userId }: Context
     ): Promise<AuthenticationUserResponse | null> {
         const user = await UserService.getUserById(userId!);
-        if(!user) {
+        if (!user) {
             return {
                 error: { field: "Not Found", message: "User not found" }
             };
         }
         const subscriptionEndDate = await UserService.getSubscriptionEndDate(userId!);
-        
+
         return {
             user: user,
-            subscriptionEndDate:subscriptionEndDate!
+            subscriptionEndDate: subscriptionEndDate!
         };
     }
 }
