@@ -26,7 +26,7 @@ class AuthService {
                 },
             });
 
-            const userWithExpoToken = await User.findOneOrFail({
+            const userWithExpoToken = await User.findOne({
                 where: {
                     expoPushToken: expoPushToken,
                 },
