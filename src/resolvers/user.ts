@@ -61,10 +61,9 @@ export class UserResolver {
         @Arg("publicKey") publicKey: string,
         @Arg("encryptedPrivateKey") encryptedPrivateKey: string,
         @Arg("expoPushToken") expoPushToken: string,
-        @Arg("profilePic", () => GraphQLUpload, { nullable: true }) profilePic: any | null, 
     ): Promise<AuthResponse> {
         try {
-            const sessionToken = await AuthService.AuthenticatedUser(licenseKey, username, publicKey, encryptedPrivateKey, expoPushToken, profilePic);
+            const sessionToken = await AuthService.AuthenticateUser(licenseKey, username, publicKey, encryptedPrivateKey, expoPushToken);
 
             if (sessionToken) {
                 return {
